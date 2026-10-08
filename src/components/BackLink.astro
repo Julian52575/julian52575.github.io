@@ -1,0 +1,35 @@
+---
+interface Props {
+  /** Fallback destination when there's no same-origin history to go back to. */
+  fallback: string;
+}
+
+const { fallback } = Astro.props;
+---
+
+<a class="back-link" href={fallback} data-back-link>&larr; Back to previous</a>
+
+<script>
+  // Prefer real browser history (preserves the timeline's tag filter and
+  // scroll position) and only fall back to the plain href when this page
+  // was opened directly (e.g. no same-origin history to return to).
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-back-link]')) {
+    link.addEventListener('click', (event) => {
+      const sameOriginReferrer =
+        document.referrer && new URL(document.referrer).origin === location.origin;
+      if (sameOriginReferrer && history.length > 1) {
+        event.preventDefault();
+        history.back();
+      }
+    });
+  }
+</script>
+
+<style>
+  .back-link {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--sub);
+    text-decoration: none;
+  }
+</style>

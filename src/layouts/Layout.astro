@@ -1,0 +1,63 @@
+---
+import '../styles/global.css';
+import { site } from '../site.config';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = site.tagline } = Astro.props;
+const path = Astro.url.pathname;
+
+function isCurrent(href: string) {
+  if (href === '/') return path === '/';
+  return path.startsWith(href);
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title} · {site.name}</title>
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <span class="accent">~</span>/{site.name.toLowerCase().replace(/\s+/g, '-')}
+        </a>
+        <ul class="nav-links">
+          <li><a href="/" aria-current={isCurrent('/') ? 'page' : undefined}>Home</a></li>
+          <li>
+            <a href="/timeline" aria-current={isCurrent('/timeline') ? 'page' : undefined}
+              >Timeline</a
+            >
+          </li>
+          <li>
+            <a href="/insights" aria-current={isCurrent('/insights') ? 'page' : undefined}
+              >Insights</a
+            >
+          </li>
+          <li>
+            <a href="/contacts" aria-current={isCurrent('/contacts') ? 'page' : undefined}
+              >My Profiles</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>&copy; {new Date().getFullYear()} {site.name}</span>
+      </div>
+    </footer>
+  </body>
+</html>

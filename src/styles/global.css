@@ -1,0 +1,189 @@
+:root {
+  --bg: #0a0b0d;
+  --bg-raised: #121317;
+  --bg-card: #16171c;
+  --border: #2a2c33;
+  --text: #e7e8ec;
+  --text-dim: #9a9ca6;
+  --main: #e8ff2e;
+  --sub: #2ed3ff;
+  --insight: #ff9ed2;
+  --font-sans: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-mono);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* --- Nav --- */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(10, 11, 13, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-nav .wrap {
+  max-width: 1100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.5rem;
+}
+
+.brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand .accent {
+  color: var(--main);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-dim);
+  transition: color 0.15s ease;
+}
+
+.nav-links a:hover,
+.nav-links a[aria-current='page'] {
+  color: var(--main);
+}
+
+/* --- Tags --- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  border: 1px solid var(--tag-border, var(--border));
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tag-main {
+  --tag-border: var(--main);
+  color: var(--main);
+  background: color-mix(in srgb, var(--main) 10%, transparent);
+}
+
+.tag-sub {
+  --tag-border: var(--sub);
+  color: var(--sub);
+  background: color-mix(in srgb, var(--sub) 10%, transparent);
+}
+
+/* Text stays white unless this tag is the one currently being searched for;
+   the border/background keep their main/sub color either way. */
+.tag-dim {
+  color: var(--text);
+}
+
+/* --- Footer --- */
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 4rem;
+  padding: 2rem 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.site-footer .wrap {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* --- Misc helpers --- */
+.eyebrow {
+  font-family: var(--font-mono);
+  color: var(--main);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+}
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.6em 1.2em;
+  border: 1px solid var(--main);
+  color: var(--main);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--main);
+  color: #0a0b0d;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.prose :where(p, ul, ol) {
+  color: var(--text);
+}
+
+.prose a {
+  color: var(--sub);
+}

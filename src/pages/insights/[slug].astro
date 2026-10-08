@@ -1,0 +1,89 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Tag from '../../components/Tag.astro';
+import BackLink from '../../components/BackLink.astro';
+import { render } from 'astro:content';
+import { getInsights, formatDate } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const insights = await getInsights();
+  return insights.map((insight) => ({
+    params: { slug: insight.id },
+    props: { insight },
+  }));
+}
+
+const { insight } = Astro.props;
+const { Content } = await render(insight);
+const { title, date, tags, tech_stack } = insight.data;
+---
+
+<Layout title={title}>
+  <article class="wrap post">
+    <BackLink fallback="/insights" />
+    <h1>{title}</h1>
+    <div class="meta">
+      <time>{formatDate(date)}</time>
+      <div class="tags">
+        {tags.map((t) => <Tag name={t.name} type={t.type} />)}
+      </div>
+    </div>
+    {
+      tech_stack && tech_stack.length > 0 && (
+        <ul class="stack">
+          {tech_stack.map((t) => (
+            <li>{t}</li>
+          ))}
+        </ul>
+      )
+    }
+    <hr />
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .post {
+    padding: 2.5rem 1.5rem 4rem;
+    max-width: 760px;
+  }
+  h1 {
+    margin: 1rem 0 1rem;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .stack {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  .stack li {
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.2em 0.6em;
+    border-radius: 4px;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+</style>

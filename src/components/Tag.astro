@@ -1,0 +1,12 @@
+---
+interface Props {
+  name: string;
+  type: 'main' | 'sub';
+  href?: string;
+}
+
+const { name, type, href } = Astro.props;
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag class={`tag tag-${type}`} href={href}>{name}</Tag>

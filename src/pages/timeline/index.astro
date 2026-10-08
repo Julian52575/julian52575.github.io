@@ -1,0 +1,692 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCommits, getInsights } from '../../lib/content';
+import { sortTagsForMenu } from '../../lib/timeline';
+
+const commits = await getCommits();
+const summaries = commits.map((c) => ({
+  id: c.data.id,
+  title: c.data.title,
+  description: c.data.description,
+  date: c.data.date,
+  tags: c.data.tags,
+  tech_stack: c.data.tech_stack ?? [],
+}));
+const tagOptions = sortTagsForMenu(summaries);
+
+const insights = await getInsights();
+const insightSummaries = insights.map((i) => ({
+  id: i.id,
+  title: i.data.title,
+  date: i.data.date,
+  tags: i.data.tags,
+}));
+---
+
+<Layout title="Timeline" description="A Git-history view of projects, roles and milestones.">
+  <section class="wrap head">
+    <p class="eyebrow">Timeline</p>
+    <h1>Career history, as a branch graph</h1>
+    <p class="text-dim">
+      Every entry is a commit — a project, a role, a milestone. Pick a tag to see it become the
+      main branch; everything else attaches as a side commit to the nearest preceding one.
+    </p>
+    <p class="legend">
+      <strong>How to read: Follow the color and branching!</strong><br />
+      The tag <strong id="legend-tag-main" class="legend-main"></strong>{' '}
+      is a <span class="legend-main">"main topic"</span>{' '}
+      on the article from the main branching while the tag{' '}
+      <strong id="legend-tag-sub" class="legend-sub"></strong>{' '}
+      is a <span class="legend-sub">"secondary topic"</span>{' '}
+      on article from the right branching.{' '}
+      <span class="legend-insight">"My personnal insights"</span>{' '}
+      can be enabled and will appear on the left branching.
+    </p>
+
+    <div class="controls">
+      <label class="tag-search">
+        <span>Tag</span>
+        <select id="tag-input">
+          {
+            tagOptions.map((t) => (
+              <option value={t.name}>
+                {t.name} ({t.count})
+              </option>
+            ))
+          }
+        </select>
+      </label>
+      <label class="toggle-field">
+        <input type="checkbox" id="insights-input" />
+        <span>Show insights (<span id="insights-count">0</span>)</span>
+      </label>
+      <label class="toggle-field">
+        <input type="checkbox" id="overview-input" />
+        <span>Branch overview</span>
+      </label>
+    </div>
+
+    <p class="current-tag">
+      Showing: <strong id="current-tag-label">education</strong>
+      <span id="result-count" class="text-dim"></span>
+    </p>
+  </section>
+
+  <section class="wrap">
+    <div id="timeline-app" class="timeline-grid"></div>
+    <p id="empty-state" class="text-dim" hidden>No commits found for this tag.</p>
+  </section>
+
+  <script id="commits-data" type="application/json" set:html={JSON.stringify(summaries)} />
+  <script id="insights-data" type="application/json" set:html={JSON.stringify(insightSummaries)} />
+</Layout>
+
+<style>
+  .head {
+    padding: 3rem 1.5rem 1rem;
+  }
+  .head h1 {
+    margin: 0.3rem 0 1rem;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+  }
+  .text-dim {
+    color: var(--text-dim);
+  }
+  .controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .tag-search {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .tag-search select {
+    appearance: none;
+    background: var(--bg-raised)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%239a9ca6' d='M4 6l4 4 4-4H4z'/%3E%3C/svg%3E")
+      no-repeat right 0.7em center;
+    background-size: 12px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5em 2.2em 0.5em 0.75em;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    min-width: 220px;
+    cursor: pointer;
+  }
+  .tag-search select:focus {
+    outline: 2px solid var(--sub);
+    outline-offset: 1px;
+  }
+  .tag-search select option {
+    background: var(--bg-raised);
+    color: var(--text);
+  }
+  .toggle-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    padding-bottom: 0.6em;
+    cursor: pointer;
+  }
+  .toggle-field input {
+    accent-color: var(--insight);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+  .current-tag {
+    margin-top: 1.25rem;
+    font-family: var(--font-mono);
+  }
+  .current-tag strong {
+    color: var(--main);
+  }
+  .legend {
+    margin: 0.5rem 0 0;
+    max-width: 62ch;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .legend-main {
+    color: var(--main);
+  }
+  .legend-sub {
+    color: var(--sub);
+  }
+  .legend-insight {
+    color: var(--insight);
+  }
+  #empty-state {
+    padding: 2rem 0;
+  }
+</style>
+
+<script>
+  import {
+    buildMergedRows,
+    type CommitSummary,
+    type InsightSummary,
+    type MergedRow,
+  } from '../../lib/timeline';
+  import { formatDate } from '../../lib/format';
+
+  const commits: CommitSummary[] = JSON.parse(
+    document.getElementById('commits-data')!.textContent || '[]',
+  );
+  const insights: InsightSummary[] = JSON.parse(
+    document.getElementById('insights-data')!.textContent || '[]',
+  );
+
+  const app = document.getElementById('timeline-app')!;
+  const emptyState = document.getElementById('empty-state')!;
+  const tagInput = document.getElementById('tag-input') as HTMLSelectElement;
+  const insightsInput = document.getElementById('insights-input') as HTMLInputElement;
+  const overviewInput = document.getElementById('overview-input') as HTMLInputElement;
+  const currentTagLabel = document.getElementById('current-tag-label')!;
+  const legendTagMain = document.getElementById('legend-tag-main')!;
+  const legendTagSub = document.getElementById('legend-tag-sub')!;
+  const resultCount = document.getElementById('result-count')!;
+  const insightsCount = document.getElementById('insights-count')!;
+
+  const DEFAULT_TAG = 'education';
+
+  function getTagFromUrl(): string {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tag') || DEFAULT_TAG;
+  }
+
+  function escapeHtml(value: string): string {
+    return value.replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+    );
+  }
+
+  function tagChipsHtml(tags: { name: string; type: 'main' | 'sub' }[], selectedTag: string): string {
+    const sorted = [...tags].sort((a, b) => {
+      if (a.name === selectedTag) return -1;
+      if (b.name === selectedTag) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    return sorted
+      .map(
+        (t) =>
+          `<span class="tag tag-${t.type}${t.name === selectedTag ? '' : ' tag-dim'}">${escapeHtml(t.name)}</span>`,
+      )
+      .join('');
+  }
+
+  function techStackHtml(stack: string[] | undefined): string {
+    if (!stack || stack.length === 0) return '';
+    const items = stack.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+    return `<ul class="t-stack">${items}</ul>`;
+  }
+
+  function overviewNode(id: string, dotClass: string, title: string, line: number): string {
+    return `
+      <button
+        type="button"
+        class="t-node t-ov-dot"
+        style="grid-row:${line}"
+        data-target="${id}"
+        aria-expanded="false"
+        aria-controls="${id}"
+        aria-label="Toggle summary for ${escapeHtml(title)}"
+      >
+        <span class="t-dot ${dotClass}"></span>
+      </button>
+    `;
+  }
+
+  function render(tag: string) {
+    const overview = overviewInput.checked;
+    app.classList.toggle('is-overview', overview);
+
+    insightsCount.textContent = String(
+      insights.filter((i) => i.tags.some((t) => t.name === tag)).length,
+    );
+
+    const rows = buildMergedRows(commits, insights, tag, insightsInput.checked);
+    const commitCount = rows.filter((r) => r.type === 'commit').length;
+    currentTagLabel.textContent = tag;
+    legendTagMain.textContent = tag;
+    legendTagSub.textContent = tag;
+    resultCount.textContent = rows.length
+      ? `(${commitCount} commit${commitCount === 1 ? '' : 's'}${
+          rows.length > commitCount ? `, ${rows.length - commitCount} insight(s)` : ''
+        })`
+      : '';
+
+    if (rows.length === 0) {
+      app.innerHTML = '';
+      emptyState.hidden = false;
+      return;
+    }
+    emptyState.hidden = true;
+
+    const idToRow = new Map(
+      rows
+        .map((r, i) => [r.type === 'commit' ? r.commit.id : null, i] as const)
+        .filter((entry): entry is [string, number] => entry[0] !== null),
+    );
+
+    const cells: string[] = [];
+    cells.push(
+      `<div class="t-spine" style="grid-row: 1 / ${rows.length + 1}" aria-hidden="true"></div>`,
+    );
+
+    rows.forEach((row: MergedRow, i) => {
+      const line = i + 1;
+
+      if (row.type === 'insight') {
+        const id = `i-${escapeHtml(row.insight.id)}`;
+        cells.push(
+          overview
+            ? overviewNode(id, 't-dot-insight', row.insight.title, line)
+            : `<div class="t-node" style="grid-row:${line}"><span class="t-dot t-dot-insight"></span></div>`,
+        );
+        cells.push(
+          overview
+            ? `
+          <article class="card t-article t-article-insight t-ov-summary" id="${id}" style="grid-row:${line}">
+            <a class="t-link" href="/insights/${escapeHtml(row.insight.id)}">
+              <h4>${escapeHtml(row.insight.title)}</h4>
+              <div class="t-tags">${tagChipsHtml(row.insight.tags, tag)}</div>
+            </a>
+          </article>
+        `
+            : `
+          <article class="card t-article t-article-insight" id="${id}" style="grid-row:${line}">
+            <a class="t-link" href="/insights/${escapeHtml(row.insight.id)}">
+              <h3>${escapeHtml(row.insight.title)}</h3>
+            </a>
+            <div class="t-meta">
+              <time>${formatDate(row.insight.date)}</time>
+              <div class="t-tags">${tagChipsHtml(row.insight.tags, tag)}</div>
+            </div>
+          </article>
+        `,
+        );
+        return;
+      }
+
+      const isMain = row.kind === 'main';
+      const id = `c-${escapeHtml(row.commit.id)}`;
+
+      cells.push(
+        overview
+          ? overviewNode(id, isMain ? 't-dot-main' : 't-dot-sub', row.commit.title, line)
+          : `<div class="t-node" style="grid-row:${line}"><span class="t-dot ${isMain ? 't-dot-main' : 't-dot-sub'}"></span></div>`,
+      );
+
+      if (row.kind === 'sub' && row.parentId && idToRow.has(row.parentId)) {
+        const parentLine = idToRow.get(row.parentId)! + 1;
+        cells.push(`
+          <div class="t-connector" style="grid-row:${line} / ${parentLine + 1}" aria-hidden="true">
+            <span class="t-connector-vert"></span>
+            <span class="t-connector-elbow"></span>
+          </div>
+        `);
+      }
+
+      cells.push(
+        overview
+          ? `
+        <article class="card t-article t-article-${row.kind} t-ov-summary" id="${id}" style="grid-row:${line}">
+          <a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}">
+            <h4>${escapeHtml(row.commit.title)}</h4>
+            <div class="t-tags">${tagChipsHtml(row.commit.tags, tag)}</div>
+          </a>
+        </article>
+      `
+          : `
+        <article class="card t-article t-article-${row.kind}" id="${id}" style="grid-row:${line}">
+          <a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}">
+            <h3>${escapeHtml(row.commit.title)}</h3>
+          </a>
+          <div class="t-meta">
+            <time>${formatDate(row.commit.date)}</time>
+            <div class="t-tags">${tagChipsHtml(row.commit.tags, tag)}</div>
+          </div>
+          <p class="t-description">${escapeHtml(row.commit.description)}</p>
+          ${techStackHtml(row.commit.tech_stack)}
+        </article>
+      `,
+      );
+    });
+
+    app.innerHTML = cells.join('');
+  }
+
+  function syncUrl(tag: string) {
+    const url = new URL(window.location.href);
+    if (tag === DEFAULT_TAG) url.searchParams.delete('tag');
+    else url.searchParams.set('tag', tag);
+    window.history.replaceState({}, '', url);
+  }
+
+  tagInput.addEventListener('change', () => {
+    const tag = tagInput.value.trim() || DEFAULT_TAG;
+    syncUrl(tag);
+    render(tag);
+  });
+
+  insightsInput.addEventListener('change', () => render(tagInput.value || DEFAULT_TAG));
+  overviewInput.addEventListener('change', () => render(tagInput.value || DEFAULT_TAG));
+
+  // Branch overview: clicking a dot pins its summary open (toggle); hovering
+  // previews it transiently. The summary itself is a normal link to the
+  // article, so clicking it navigates away as usual.
+  app.addEventListener('click', (event) => {
+    const dot = (event.target as HTMLElement).closest<HTMLButtonElement>('.t-ov-dot');
+    if (!dot) return;
+    const summary = document.getElementById(dot.dataset.target || '');
+    const isOpen = summary?.classList.toggle('is-open');
+    dot.setAttribute('aria-expanded', String(Boolean(isOpen)));
+  });
+
+  app.addEventListener('mouseover', (event) => {
+    const dot = (event.target as HTMLElement).closest<HTMLButtonElement>('.t-ov-dot');
+    document.getElementById(dot?.dataset.target || '')?.classList.add('is-hovered');
+  });
+
+  app.addEventListener('mouseout', (event) => {
+    const dot = (event.target as HTMLElement).closest<HTMLButtonElement>('.t-ov-dot');
+    document.getElementById(dot?.dataset.target || '')?.classList.remove('is-hovered');
+  });
+
+  // Remember which article was opened so that returning via "Back to
+  // previous" (or a reload that misses the bfcache) can scroll straight
+  // back to it, instead of just landing at the top of the tag's list.
+  const RETURN_KEY = 'timeline:last-opened-article';
+  app.addEventListener('click', (event) => {
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>('.t-link');
+    const articleId = link?.closest<HTMLElement>('.t-article')?.id;
+    if (articleId) sessionStorage.setItem(RETURN_KEY, articleId);
+  });
+
+  function restoreScrollToLastArticle() {
+    const targetId = sessionStorage.getItem(RETURN_KEY);
+    if (!targetId) return;
+    sessionStorage.removeItem(RETURN_KEY);
+    document.getElementById(targetId)?.scrollIntoView({ block: 'center' });
+  }
+
+  const initialTag = getTagFromUrl();
+  tagInput.value = initialTag;
+  render(initialTag);
+  restoreScrollToLastArticle();
+
+  window.addEventListener('popstate', () => render(getTagFromUrl()));
+</script>
+
+<style is:global>
+  .timeline-grid {
+    --lane-insight: 12px;
+    --lane-main: 36px;
+    --lane-sub: 60px;
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    column-gap: 1rem;
+    row-gap: 1.25rem;
+    align-items: start;
+    padding: 1.5rem 0 3rem;
+    position: relative;
+  }
+
+  .t-spine {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: stretch;
+    position: relative;
+    width: 3px;
+    left: var(--lane-main);
+    margin-left: -1.5px;
+    background: var(--main);
+    opacity: 0.4;
+  }
+
+  .t-node {
+    grid-column: 1;
+    position: relative;
+    height: 24px;
+    align-self: start;
+    margin-top: 0.4rem;
+  }
+
+  .t-dot {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px currentColor;
+    transform: translate(-50%, -50%);
+  }
+
+  .t-dot-main {
+    left: var(--lane-main);
+    background: var(--main);
+    color: var(--main);
+    box-shadow: 0 0 8px var(--main);
+  }
+
+  .t-dot-sub {
+    left: var(--lane-sub);
+    background: var(--sub);
+    color: var(--sub);
+    width: 10px;
+    height: 10px;
+    box-shadow: 0 0 6px var(--sub);
+  }
+
+  .t-dot-insight {
+    left: var(--lane-insight);
+    background: var(--insight);
+    color: var(--insight);
+    width: 10px;
+    height: 10px;
+    box-shadow: 0 0 6px var(--insight);
+  }
+
+  .t-connector {
+    grid-column: 1;
+    align-self: stretch;
+    position: relative;
+    pointer-events: none;
+  }
+
+  .t-connector-vert {
+    position: absolute;
+    top: 0.6rem;
+    bottom: 0.9rem;
+    left: var(--lane-sub);
+    width: 2px;
+    margin-left: -1px;
+    background: var(--sub);
+    opacity: 0.85;
+  }
+
+  .t-connector-elbow {
+    position: absolute;
+    bottom: 0.9rem;
+    left: var(--lane-main);
+    width: calc(var(--lane-sub) - var(--lane-main));
+    height: 2px;
+    background: var(--sub);
+    opacity: 0.85;
+  }
+
+  .t-article {
+    grid-column: 2;
+  }
+
+  .t-article-main {
+    border-width: 2px;
+    border-color: color-mix(in srgb, var(--main) 55%, var(--border));
+  }
+
+  .t-article-sub {
+    border-color: color-mix(in srgb, var(--sub) 40%, var(--border));
+  }
+
+  .t-article-insight {
+    border-color: color-mix(in srgb, var(--insight) 40%, var(--border));
+  }
+
+  .t-article-insight .t-link:hover h3,
+  .t-article-insight .t-link:hover h4 {
+    color: var(--insight);
+  }
+
+  .t-link {
+    text-decoration: none;
+    color: var(--text);
+  }
+
+  .t-article h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  .t-link:hover h3,
+  .t-link:hover h4 {
+    color: var(--main);
+  }
+
+  .t-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .t-description {
+    margin: 0.9rem 0 0;
+    color: var(--text-dim);
+  }
+
+  .t-stack {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.9rem 0 0;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  .t-stack li {
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0.15em 0.55em;
+    border-radius: 4px;
+  }
+
+  /* --- Branch overview: dots-only graph in a fixed, scrollable box --- */
+  .timeline-grid.is-overview {
+    --overview-row: 56px;
+    grid-auto-rows: var(--overview-row);
+    row-gap: 0.4rem;
+    max-height: min(65vh, 620px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 0.85rem;
+  }
+
+  .t-ov-dot {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+    align-self: stretch;
+    height: 100%;
+    width: 100%;
+  }
+
+  .t-ov-dot:focus-visible .t-dot {
+    outline: 2px solid var(--sub);
+    outline-offset: 3px;
+  }
+
+  .card.t-ov-summary {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    overflow: hidden;
+    padding: 0 0.9rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+
+  .t-ov-summary.is-open,
+  .t-ov-summary.is-hovered {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .t-ov-summary .t-link {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .t-ov-summary h4 {
+    margin: 0 0 0.25rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .t-ov-summary .t-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    max-height: 1.5em;
+    overflow: hidden;
+  }
+
+  @media (max-width: 640px) {
+    .timeline-grid {
+      --lane-insight: 8px;
+      --lane-main: 22px;
+      --lane-sub: 36px;
+      grid-template-columns: 44px 1fr;
+      column-gap: 0.6rem;
+    }
+
+    .timeline-grid.is-overview {
+      --overview-row: 48px;
+      max-height: min(70vh, 540px);
+      padding: 0.75rem 0.6rem;
+    }
+  }
+</style>

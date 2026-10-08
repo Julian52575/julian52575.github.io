@@ -1,0 +1,62 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { site } from '../site.config';
+
+const links = [
+  { label: 'GitHub', href: site.links.github },
+  { label: 'LinkedIn', href: site.links.linkedin },
+  { label: 'Email', href: site.links.email },
+  { label: 'Hack The Box', href: site.links.hackTheBox },
+  { label: 'Wakatime', href: site.links.wakatime },
+];
+---
+
+<Layout title="My Profiles" description="Get in touch.">
+  <section class="wrap head">
+    <p class="eyebrow">My Profiles</p>
+    <p class="text-dim">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+      ut labore et dolore magna aliqua.
+    </p>
+  </section>
+
+  <section class="wrap links">
+    {
+      links.map((link) => (
+        <a class="card link-card" href={link.href}>
+          {link.label}
+        </a>
+      ))
+    }
+  </section>
+</Layout>
+
+<style>
+  .head {
+    padding: 3rem 1.5rem 1rem;
+  }
+  .head h1 {
+    margin: 0.3rem 0 1rem;
+  }
+  .text-dim {
+    color: var(--text-dim);
+  }
+  .links {
+    padding: 1.5rem 1.5rem 4rem;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .link-card {
+    text-decoration: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    text-align: center;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .link-card:hover {
+    color: var(--main);
+    border-color: var(--main);
+  }
+</style>

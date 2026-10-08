@@ -1,0 +1,109 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Tag from '../../components/Tag.astro';
+import { getInsights, formatDate, formatMonthYear } from '../../lib/content';
+
+const insights = await getInsights();
+
+// Insights come back newest-first; group consecutive ones under the same
+// "Month Year" heading.
+const sections = insights.reduce<{ label: string; insights: typeof insights }[]>(
+  (acc, insight) => {
+    const label = formatMonthYear(insight.data.date);
+    const last = acc.at(-1);
+    if (last?.label === label) last.insights.push(insight);
+    else acc.push({ label, insights: [insight] });
+    return acc;
+  },
+  [],
+);
+---
+
+<Layout title="Insights" description="Short write-ups on projects, tools and lessons learned.">
+  <section class="wrap head">
+    <p class="eyebrow">Insights</p>
+    <h1>Notes from the field</h1>
+    <p class="text-dim">Technical retrospectives, opinions and things worth writing down.</p>
+  </section>
+
+  <section class="wrap list">
+    {
+      sections.map((section) => (
+        <div class="section">
+          <h3 class="section-label">{section.label}</h3>
+          {section.insights.map((insight) => (
+            <article class="card">
+              <a class="i-link" href={`/insights/${insight.id}`}>
+                <h2>{insight.data.title}</h2>
+              </a>
+              <div class="meta">
+                <time>{formatDate(insight.data.date)}</time>
+                <div class="tags">
+                  {insight.data.tags.map((t) => (
+                    <Tag name={t.name} type={t.type} />
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ))
+    }
+    {insights.length === 0 && <p class="text-dim">No insights published yet.</p>}
+  </section>
+</Layout>
+
+<style>
+  .head {
+    padding: 3rem 1.5rem 1rem;
+  }
+  .head h1 {
+    margin: 0.3rem 0 1rem;
+  }
+  .text-dim {
+    color: var(--text-dim);
+  }
+  .list {
+    padding: 1.5rem 1.5rem 4rem;
+    display: grid;
+    gap: 2rem;
+  }
+  .section {
+    display: grid;
+    gap: 1rem;
+  }
+  .section-label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--main);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .i-link {
+    text-decoration: none;
+    color: var(--text);
+  }
+  .i-link:hover h2 {
+    color: var(--main);
+  }
+  .list h2 {
+    margin: 0 0 0.6rem;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+</style>
