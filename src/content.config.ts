@@ -1,10 +1,10 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
-// Accepts "YYYY-MM" or "YYYY-MM-DD".
+// Accepts "YYYY", "YYYY-MM" or "YYYY-MM-DD".
 const dateString = z
   .string()
-  .regex(/^\d{4}-\d{2}(-\d{2})?$/, 'date must be "YYYY-MM" or "YYYY-MM-DD"');
+  .regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'date must be "YYYY", "YYYY-MM" or "YYYY-MM-DD"');
 
 const tag = z.object({
   name: z.string().min(1, 'tag name is required'),
@@ -22,6 +22,7 @@ const commits = defineCollection({
     date: dateString,
     tags: z.array(tag).min(1, 'at least one tag is required'),
     tech_stack: z.array(z.string()).optional(),
+    link: z.string().url('link must be a valid URL').optional(),
   }),
 });
 

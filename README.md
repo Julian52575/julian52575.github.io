@@ -26,13 +26,15 @@ tags:
 tech_stack:               # optional
   - Docker
   - Kubernetes
+link: https://github.com/you/my-project   # optional, shown in the header (GitHub icon if github.com)
 ---
 
-Body in Markdown.
+Body in Markdown. Omit the body entirely for a bodiless commit: it still shows up on the
+timeline (summary only) but gets no article page and isn't clickable.
 ```
 
 **An insight (blog post)**: add a Markdown file to `src/content/insights/` with `title`,
-`date` and `tags` (same rules as above, no `id`/`tech_stack`).
+`date` and `tags` (same rules as above, no `id`/`tech_stack`/`link`).
 
 Both collections are validated at build time (`src/content.config.ts`); the build fails with
 a clear error if a file is malformed (missing fields, bad date format, duplicate `id`,

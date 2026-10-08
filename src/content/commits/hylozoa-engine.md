@@ -1,26 +1,20 @@
 ---
 id: hylozoa-engine
-title: Hylozoa Engine
-description: Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.
-date: "2025-03-03"
+title: Hylozoa-Engine
+description: Game engine of Hylozoa.
+date: "2025-08-03"
 tags:
-  - name: education
-    type: main
   - name: c++
-    type: sub
+    type: main
   - name: devops
+    type: main
+  - name: epitech-4
     type: main
   - name: epitech
     type: main
 tech_stack:
   - C++
   - CMake
-  - Nix
+  - Lua
+link: https://github.com/Julian52575/Hylozoa-Engine-Engine
 ---
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-laboris nisi ut aliquip ex ea commodo consequat.
-
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur.

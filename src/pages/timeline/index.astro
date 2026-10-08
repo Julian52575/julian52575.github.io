@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getCommits, getInsights } from '../../lib/content';
+import { getCommits, getInsights, commitBodyLineCount } from '../../lib/content';
 import { sortTagsForMenu } from '../../lib/timeline';
 
 const commits = await getCommits();
@@ -11,6 +11,8 @@ const summaries = commits.map((c) => ({
   date: c.data.date,
   tags: c.data.tags,
   tech_stack: c.data.tech_stack ?? [],
+  link: c.data.link,
+  lineCount: commitBodyLineCount(c),
 }));
 const tagOptions = sortTagsForMenu(summaries);
 
@@ -67,7 +69,7 @@ const insightSummaries = insights.map((i) => ({
     </div>
 
     <p class="current-tag">
-      Showing: <strong id="current-tag-label">education</strong>
+      Showing: <strong id="current-tag-label">epitech-5</strong>
       <span id="result-count" class="text-dim"></span>
     </p>
   </section>
@@ -201,7 +203,7 @@ const insightSummaries = insights.map((i) => ({
   const resultCount = document.getElementById('result-count')!;
   const insightsCount = document.getElementById('insights-count')!;
 
-  const DEFAULT_TAG = 'education';
+  const DEFAULT_TAG = 'epitech-5';
 
   function getTagFromUrl(): string {
     const params = new URLSearchParams(window.location.search);
@@ -233,6 +235,27 @@ const insightSummaries = insights.map((i) => ({
     if (!stack || stack.length === 0) return '';
     const items = stack.map((t) => `<li>${escapeHtml(t)}</li>`).join('');
     return `<ul class="t-stack">${items}</ul>`;
+  }
+
+  function isGithubLink(href: string): boolean {
+    try {
+      return new URL(href).hostname === 'github.com';
+    } catch {
+      return false;
+    }
+  }
+
+  const GITHUB_ICON =
+    '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+  const LINK_ICON =
+    '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.5 9.5 14 2"/><path d="M9 2h5v5"/><path d="M13 9v4.5a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1H7"/></svg>';
+
+  function linkBadgeHtml(href: string | undefined): string {
+    if (!href) return '';
+    const github = isGithubLink(href);
+    return `<a class="link-badge" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" aria-label="Open link">${
+      github ? GITHUB_ICON : LINK_ICON
+    }<span>${github ? 'GitHub' : 'Link'}</span></a>`;
   }
 
   function overviewNode(id: string, dotClass: string, title: string, line: number): string {
@@ -342,24 +365,37 @@ const insightSummaries = insights.map((i) => ({
         `);
       }
 
+      const hasArticle = row.commit.lineCount > 0;
+      const titleHtml = escapeHtml(row.commit.title);
+      const tagsHtml = tagChipsHtml(row.commit.tags, tag);
+
       cells.push(
         overview
           ? `
         <article class="card t-article t-article-${row.kind} t-ov-summary" id="${id}" style="grid-row:${line}">
-          <a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}">
-            <h4>${escapeHtml(row.commit.title)}</h4>
-            <div class="t-tags">${tagChipsHtml(row.commit.tags, tag)}</div>
-          </a>
+          ${
+            hasArticle
+              ? `<a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}">
+                  <h4>${titleHtml}</h4>
+                  <div class="t-tags">${tagsHtml}</div>
+                </a>`
+              : `<div class="t-ov-plain">
+                  <h4>${titleHtml}</h4>
+                  <div class="t-tags">${tagsHtml}</div>
+                </div>`
+          }
         </article>
       `
           : `
-        <article class="card t-article t-article-${row.kind}" id="${id}" style="grid-row:${line}">
-          <a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}">
-            <h3>${escapeHtml(row.commit.title)}</h3>
-          </a>
+        <article class="card t-article t-article-${row.kind}${hasArticle ? '' : ' t-no-link'}" id="${id}" style="grid-row:${line}">
+          <div class="t-head">
+            ${hasArticle ? `<a class="t-link" href="/timeline/${escapeHtml(row.commit.id)}"><h3>${titleHtml}</h3></a>` : `<h3>${titleHtml}</h3>`}
+            ${linkBadgeHtml(row.commit.link)}
+          </div>
           <div class="t-meta">
             <time>${formatDate(row.commit.date)}</time>
-            <div class="t-tags">${tagChipsHtml(row.commit.tags, tag)}</div>
+            <div class="t-tags">${tagsHtml}</div>
+            ${hasArticle ? `<span class="t-linecount">${row.commit.lineCount} line${row.commit.lineCount === 1 ? '' : 's'}</span>` : ''}
           </div>
           <p class="t-description">${escapeHtml(row.commit.description)}</p>
           ${techStackHtml(row.commit.tech_stack)}
@@ -558,14 +594,38 @@ const insightSummaries = insights.map((i) => ({
     color: var(--text);
   }
 
-  .t-article h3 {
+  .t-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
     margin: 0 0 0.5rem;
+  }
+
+  .t-article h3 {
+    margin: 0;
     font-size: 1.1rem;
+  }
+
+  .t-no-link h3 {
+    color: var(--text);
   }
 
   .t-link:hover h3,
   .t-link:hover h4 {
     color: var(--main);
+  }
+
+  .t-linecount::before {
+    content: '·';
+    margin-right: 0.6rem;
+    color: var(--border);
+  }
+
+  .t-ov-plain {
+    display: block;
+    width: 100%;
+    overflow: hidden;
   }
 
   .t-meta {

@@ -1,7 +1,7 @@
-/** "2026-08" -> [2026, 8, 1]; "2026-08-30" -> [2026, 8, 30] */
+/** "2026" -> [2026, 1, 1]; "2026-08" -> [2026, 8, 1]; "2026-08-30" -> [2026, 8, 30] */
 export function dateParts(date: string): [number, number, number] {
   const [y, m, d] = date.split('-').map(Number);
-  return [y, m, d ?? 1];
+  return [y, m ?? 1, d ?? 1];
 }
 
 export function compareByDateThenId(
@@ -17,6 +17,7 @@ export function compareByDateThenId(
 }
 
 export function formatDate(date: string): string {
+  if (date.length === 4) return date;
   const [y, m, d] = dateParts(date);
   const label = new Date(Date.UTC(y, m - 1, 1)).toLocaleString('en-US', {
     month: 'long',

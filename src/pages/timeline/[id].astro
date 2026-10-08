@@ -2,20 +2,24 @@
 import Layout from '../../layouts/Layout.astro';
 import Tag from '../../components/Tag.astro';
 import BackLink from '../../components/BackLink.astro';
+import LinkBadge from '../../components/LinkBadge.astro';
 import { render } from 'astro:content';
-import { getCommits, formatDate } from '../../lib/content';
+import { getCommits, formatDate, commitHasBody } from '../../lib/content';
 
 export async function getStaticPaths() {
   const commits = await getCommits();
-  return commits.map((commit) => ({
-    params: { id: commit.data.id },
-    props: { commit },
-  }));
+  // No body means no standalone article page to generate.
+  return commits
+    .filter(commitHasBody)
+    .map((commit) => ({
+      params: { id: commit.data.id },
+      props: { commit },
+    }));
 }
 
 const { commit } = Astro.props;
 const { Content } = await render(commit);
-const { title, date, tags, tech_stack } = commit.data;
+const { title, date, tags, tech_stack, link } = commit.data;
 ---
 
 <Layout title={title}>
@@ -27,6 +31,7 @@ const { title, date, tags, tech_stack } = commit.data;
       <div class="tags">
         {tags.map((t) => <Tag name={t.name} type={t.type} href={`/timeline?tag=${t.name}`} />)}
       </div>
+      {link && <LinkBadge href={link} />}
     </div>
     {
       tech_stack && tech_stack.length > 0 && (

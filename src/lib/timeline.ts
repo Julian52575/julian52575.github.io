@@ -10,6 +10,9 @@ export interface CommitSummary {
   date: string;
   tags: TagRef[];
   tech_stack?: string[];
+  link?: string;
+  /** Number of non-empty lines in the Markdown body; 0 means no article page. */
+  lineCount: number;
 }
 
 export interface InsightSummary {
@@ -121,11 +124,20 @@ export interface TagOption {
 }
 
 /**
- * Tag menu order: "education", "professional" and "personal project" always come
- * first (in that order, when present), then the rest sorted by number of
- * commits descending, ties broken alphabetically.
+ * Tag menu order: these tags always come first (in this order, when
+ * present), then the rest sorted by number of commits descending, ties
+ * broken alphabetically.
  */
-const PRIORITY_TAGS = ['education', 'professional', 'personal project'];
+const PRIORITY_TAGS = [
+  'epitech-5',
+  'epitech-4',
+  'epitech-3',
+  'epitech-2',
+  'epitech-1',
+  'education',
+  'professional',
+  'personal project',
+];
 
 export function sortTagsForMenu(commits: CommitSummary[]): TagOption[] {
   const counts = new Map<string, number>();

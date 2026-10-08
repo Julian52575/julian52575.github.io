@@ -27,6 +27,17 @@ export async function getCommits(): Promise<Commit[]> {
   return commits.sort(compareByDateThenId);
 }
 
+/** Non-empty, non-whitespace lines in a commit's Markdown body. */
+export function commitBodyLineCount(commit: Commit): number {
+  const body = (commit.body ?? '').trim();
+  if (!body) return 0;
+  return body.split('\n').filter((line) => line.trim().length > 0).length;
+}
+
+export function commitHasBody(commit: Commit): boolean {
+  return commitBodyLineCount(commit) > 0;
+}
+
 export async function getInsights(): Promise<Insight[]> {
   const insights = await getCollection('insights');
   return insights.sort(compareByDateThenId);
